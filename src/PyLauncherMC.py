@@ -151,7 +151,11 @@ with PB("Cargando variables por defecto."):
         MaxRam      = '1G'
         MC          = '.'
         Lib         = os.path.join('{Data.MC}', 'libraries')
-        CLASSPATH   = []
+        CLASSPATH = [
+            os.path.join("{Data.Lib}", 'log4j-core-2.17.0.jar'),
+            os.path.join("{Data.Lib}", 'log4j-api-2.17.0.jar'),
+            os.path.join("{Data.MC}", 'versions', "{Data.Version}", "{Data.Version}.jar"),
+        ]
         Natives     = os.path.join('{Data.MC}', 'bin', 'natives')
         MainClass   = 'net.minecraft.client.main.Main'
         Nick        = ''
@@ -218,7 +222,7 @@ def Launch(Data, args):
     Data.CLASSPATH   = ";".join([D.format(Data = Data) for D in Data.CLASSPATH])
     Data.Natives     = Data.Natives     .format(Data = Data)
     Data.MainClass   = Data.MainClass   .format(Data = Data)
-    if Data.Nick: Data.Nick = "--username " + Data.Nick .format(Data = Data)
+    if Data.Nick: Data.Nick = '--username "%s"' % Data.Nick.format(Data = Data)
     Data.Token       = Data.Token       .format(Data = Data)
     Data.Version     = Data.Version     .format(Data = Data)
     Data.AssetsIndex = Data.AssetsIndex .format(Data = Data)

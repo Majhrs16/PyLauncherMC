@@ -21,19 +21,6 @@ def dThread(func):
         return _dThread(func, *args, **kw)
     return decorator
 
-if __name__ == "__main__":
-    @dThread
-    def Func(abc):
-        print(abc)
-
-    x = Func(123)
-    x.start(daemon = False)
-    x.start(daemon = True)
-    x.start(daemon = True)
-    print("OK")
-    exit()
-
-
 class Color:
     def __enter__(self):
         colorama.init()
