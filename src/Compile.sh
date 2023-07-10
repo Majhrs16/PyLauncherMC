@@ -1,0 +1,1 @@
+pyinstaller -i .ico --onefile PyLauncherMC.py
