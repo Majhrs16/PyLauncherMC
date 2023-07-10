@@ -1,30 +1,64 @@
+from Maj.Sh import dThread, Color, console
+from subprocess import Popen, PIPE
 from threading import Thread
-from Sh import dThread, Color
+
+import traceback
+import keyboard
 import argparse
+import shutil
 import runpy
-import os
+import glob
 import time
 import sys
-import glob
-import keyboard
-import shutil
+import os
 
-__version__ = "b1.0"
 
-class Logger:
-    log = []
+__version__ = "b1.1.1"
+
+class _Logger:
+    def __init__(self):
+        self.log = []
+        self.O   = None
 
     def add(self, *s):
         self.log.extend(s)
 
     @dThread
     def show(self):
+        pass
+
+class LoggerOut(_Logger):
+    def __init__(self):
+        super().__init__()
+
+        self.O = sys.stdout
+
+    @dThread
+    def show(self):
         with Color() as term:
             while True:
-                if self.log: sys.stdout.write(term.translate(self.log.pop(0)))
+                if self.log:
+                    self.O.write(term.translate(self.log.pop(0)))
+                    self.O.flush()
                 else: time.sleep(0.1)
 
-log = Logger()
+class LoggerFile(_Logger):
+    def __init__(self):
+        super().__init__()
+
+        self.O = open("log.log", "w")
+
+    @dThread
+    def show(self):
+        with self.O:
+            while True:
+                if self.log:
+                    self.O.write(self.log.pop(0))
+                    self.O.flush()
+                else: time.sleep(0.1)
+
+out = LoggerOut()
+log = LoggerFile()
 
 class PB:
     def __init__(self, *s):
@@ -38,10 +72,13 @@ class PB:
     def __exit__(self, *x):
         self.stop()
 
+        s = None
         if x == (None,) * 3:
-            log.add("&f[  &2OK  &f] " + self.s + "\n")
+            s = "&f[  &2OK  &f] " + self.s + "\n"
         else:
-            log.add("&f[ &cFAIL &f] " + self.s + "\n")
+            s = "&f[ &cFAIL &f] " + self.s + "\n"
+        out.add(s)
+        log.add(s)
 
     @dThread
     def show(self):
@@ -62,7 +99,7 @@ class PB:
                       "&f[&a**    &f]"
                      ]:
                 if self.exit: break
-                log.add(s, " ", self.s, "\r")
+                out.add(s, " ", self.s, "\r")
                 time.sleep(0.250)
 
     def stop(self):
@@ -71,10 +108,11 @@ class PB:
 class CLI:
     def __init__(self):
         self.input    = "> "
-        self.exit     = False
         self.Versions = {}
 
     def start(self):
+        self.exit     = False
+
         self.searchVersions().start(daemon = True)
         self.show().start()
 
@@ -112,7 +150,7 @@ class CLI:
             Buff.append("&2║ " + self.input.ljust(x - 3) + "║")
             Buff.append("&2╚" + ("═" * (x - 2) + "╝"))
 
-            log.add("\n".join(Buff))
+            out.add("\n".join(Buff))
             time.sleep(1 / 15) # 15 FPS
 
     def getVersion(self):
@@ -198,9 +236,9 @@ with PB("Cargando variables por defecto."):
                 '-XX:-UseCompressedOops',
                 '-XX:ParallelGCThreads=4',
                 '-Dorg.lwjgl.opengl.Display.setFullscreen=true',
-                '"-Djava.library.path={Data.Natives}"',
-                '-cp "{Data.CLASSPATH}"',
-                '"-Dlog4j.configurationFile=%s"' % os.path.join('{Data.Lib}', 'client-1.7.xml')
+                '-Djava.library.path={Data.Natives}',
+                'reservado',
+                '-Dlog4j.configurationFile=%s' % os.path.join('{Data.Lib}', 'client-1.7.xml')
             ]
 
             MC  = [
@@ -210,7 +248,6 @@ with PB("Cargando variables por defecto."):
                 '--accessToken {Data.Token}',
                 '--version "{Data.Version}"',
                 '--assetIndex {Data.AssetsIndex}',
-                '--userProperties {{}}'
             ]
 
 def Launch(Data, args):
@@ -219,26 +256,47 @@ def Launch(Data, args):
     Data.MaxRam      = Data.MaxRam      .format(Data = Data)
     Data.MC          = Data.MC          .format(Data = Data)
     Data.Lib         = Data.Lib         .format(Data = Data)
-    Data.CLASSPATH   = ";".join([D.format(Data = Data) for D in Data.CLASSPATH])
+    Data.CLASSPATH   = [D.format(Data = Data) for D in Data.CLASSPATH]
     Data.Natives     = Data.Natives     .format(Data = Data)
     Data.MainClass   = Data.MainClass   .format(Data = Data)
-    if Data.Nick: Data.Nick = '--username "%s"' % Data.Nick.format(Data = Data)
+    if Data.Nick: Data.Nick = '--username %s' % Data.Nick.format(Data = Data)
     Data.Token       = Data.Token       .format(Data = Data)
     Data.Version     = Data.Version     .format(Data = Data)
     Data.AssetsIndex = Data.AssetsIndex .format(Data = Data)
 
-    Data.Flags.JVM   = " ".join([D.format(Data = Data) for D in Data.Flags.JVM])
-    Data.Flags.MC    = " ".join([D.format(Data = Data) for D in Data.Flags.MC])
+    Data.Flags.JVM[-2] = "-cp " + ";".join(Data.CLASSPATH) ############ POTENCIALMENTE PELIGROSO...
 
-    CommandLine = " ".join([Data.JVM, Data.Flags.JVM, Data.MainClass, Data.Flags.MC])
+    Data.Flags.JVM   = [D.format(Data = Data) for D in Data.Flags.JVM]
+    Data.Flags.MC    = [D.format(Data = Data) for D in Data.Flags.MC]
+
+
+    CommandLine = " ".join([Data.JVM, *Data.Flags.JVM, Data.MainClass, *Data.Flags.MC])
+
     if Data.Debug:
-        log.add(CommandLine)
-    else:
-        try: os.system(CommandLine)
-        except KeyboardInterrupt: pass
+        s = "&aLinea de comando resultante a ejecutar&f: '&b%s&f'\n" % CommandLine
+        log.add(s)
+        out.add(s)
+
+    else: console and console().hide()
+
+    try:
+        if Data.Debug:
+            os.system(CommandLine)
+
+        else:
+            time.sleep(1)
+            p = Popen(CommandLine.split(), stdout = PIPE)
+            log.add(p.stdout.read().decode("UTF-8").replace("\r\n", "\n"))
+
+    except KeyboardInterrupt: pass
+    except Exception as e:
+        s = traceback.format_exc()
+        log.add(s)
+        out.add(s)
 
 if __name__ == "__main__":
     log.show().start(daemon = True)
+    out.show().start(daemon = True)
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--version', default = None, help = 'Version de Minecraft')
@@ -254,28 +312,49 @@ if __name__ == "__main__":
     Data.Debug   = args.debug
     Data.Nick    = args.nick
 
-    cli = CLI()
-    if Data.Version is None:
-        cli.start()
-        Data.Version = cli.getVersion()
+    i = 0
+    max = 1
+    while i < max:
+        cli = CLI()
+        if args.version is None:
+            max = 999
 
-    cli.stop()
+            console and console().restore()
+            cli.start()
+            Data.Version = cli.getVersion()
 
-    if Data.Version is not None:
-        try:
-            dir = os.path.join(Data.MC, "versions", Data.Version)
-            os.makedirs(dir, exist_ok = True)
-            with PB("Cargando Minecraft %s." % Data.Version):
-                Data = runpy.run_path(os.path.join(dir, Data.Version + ".py"), init_globals = {"Data": Data, "log": log, "args": args}).get("Data", None)
-            assert Data, "Version incompatible o mal estructurada."
-            Launch(Data, args)
+        cli.stop()
 
-        except AssertionError as e:
-            log.add(e)
+        if Data.Version is not None:
+            try:
+                dir = os.path.join(Data.MC, "versions", Data.Version)
+                os.makedirs(dir, exist_ok = True)
+                with PB("Cargando Minecraft %s." % Data.Version):
+                    Data = runpy.run_path(os.path.join(dir, Data.Version + ".py"), init_globals = {"Data": Data, "log": log, "args": args}).get("Data", None)
+                assert Data, "Version incompatible o mal estructurada."
+                Launch(Data, args)
 
-        except FileNotFoundError:
-            log.add("Archivo de configuracion no encontrada")
+            except AssertionError as e:
+                log.add(e)
+                out.add(e)
+                time.slep(3)
 
-        except: pass
+            except FileNotFoundError:
+                s = "\tArchivo de configuracion no encontrado\n"
+                log.add(s)
+                out.add(s)
+                time.sleep(3)
 
-    exit()
+            except Exception as e:
+                s = traceback.format_exc()
+                log.add(s)
+                out.add(s)
+                time.sleep(3)
+                break
+
+        else: break
+
+        i += 1
+
+    console and console().restore()
+    sys.exit()
