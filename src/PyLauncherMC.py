@@ -1,5 +1,5 @@
 from threading import Thread
-from Sh import dThread
+from Sh import dThread, Color
 import argparse
 import runpy
 import os
@@ -9,54 +9,64 @@ import glob
 import keyboard
 import shutil
 
+__version__ = "b1.0"
+
 class Logger:
-    def __init__(self):
-            self.log = []
+    log = []
 
-    class add:
-        def __init__(self, *s):
-            self.Exit = False
-            self.s = " ".join(s)
+    def add(self, *s):
+        self.log.extend(s)
 
-        def __call__(self, s = None):
-            log.log.append(s or self.s)
+    @dThread
+    def show(self):
+        with Color() as term:
+            while True:
+                if self.log: sys.stdout.write(term.translate(self.log.pop(0)))
+                else: time.sleep(0.1)
 
-        def __enter__(self):
-            self.PB().start()
-            return self
+log = Logger()
 
-        def __exit__(self, *x):
-            if x == (None,) * 3:
-                self("[  OK  ] " + self.s + "\n")
-            else: self("[ FAIL ] " + self.s + "\n")
-            self.Exit = True
+class PB:
+    def __init__(self, *s):
+        self.exit = False
+        self.s = " ".join(s)
 
-        @dThread
-        def PB(self):
-            while not self.Exit:
-                for s in ["[*     ]",
-                          "[**    ]",
-                          "[***   ]",
-                          "[ ***  ]",
-                          "[  *** ]",
-                          "[   ***]",
-                          "[    **]",
-                          "[     *]",
-                          "[    **]",
-                          "[   ***]",
-                          "[  *** ]",
-                          "[ ***  ]",
-                          "[***   ]",
-                          "[**    ]",
-                         ]:
-                    if self.Exit: break
-                    self(s + " " + self.s + "\r")
-                    time.sleep(0.250)
+    def __enter__(self):
+        self.show().start()
+        return self
 
-    def loop(self):
-        while True:
-            if self.log: print(self.log.pop(0), end = "")
-            else: time.sleep(0.1)
+    def __exit__(self, *x):
+        self.stop()
+
+        if x == (None,) * 3:
+            log.add("&f[  &2OK  &f] " + self.s + "\n")
+        else:
+            log.add("&f[ &cFAIL &f] " + self.s + "\n")
+
+    @dThread
+    def show(self):
+        while not self.exit:
+            for s in ["&f[&a*     &f]",
+                      "&f[&a**    &f]",
+                      "&f[&a***   &f]",
+                      "&f[&a ***  &f]",
+                      "&f[&a  *** &f]",
+                      "&f[&a   ***&f]",
+                      "&f[&a    **&f]",
+                      "&f[&a     *&f]",
+                      "&f[&a    **&f]",
+                      "&f[&a   ***&f]",
+                      "&f[&a  *** &f]",
+                      "&f[&a ***  &f]",
+                      "&f[&a***   &f]",
+                      "&f[&a**    &f]"
+                     ]:
+                if self.exit: break
+                log.add(s, " ", self.s, "\r")
+                time.sleep(0.250)
+
+    def stop(self):
+        self.exit = True
 
 class CLI:
     def __init__(self):
@@ -66,7 +76,7 @@ class CLI:
 
     def start(self):
         self.searchVersions().start(daemon = True)
-        self.show().start(daemon = True)
+        self.show().start()
 
     def getVersions(self):
         Versions = {}
@@ -84,25 +94,26 @@ class CLI:
 
     @dThread
     def show(self):
-        while not self.exit:
+        while True:
+            if self.exit: break
             x, y = shutil.get_terminal_size()
             Buff = []
 
-            os.system('cls' if sys.platform.startswith("win") else 'clear')
-
-            Buff.append("╔" + ("═" * (x - 2) + "╗"))
-            Buff.append("║" + "PyLauncherMC a2.4".center(x - 2) + "║")
-            Buff.append("╠" + ("═" * (x - 2) + "╣"))
-            Buff.append("║ " + "Por favor, presione el numero que corresponda a su version:".ljust(x - 3) + "║")
+#            os.system('cls' if sys.platform.startswith("win") else 'clear')
+            Buff.append("&2╔" + ("═" * (x - 2) + "╗"))
+            Buff.append("&2║" + ("&bPyLauncherMC " + __version__).center(x) + "&2║")
+            Buff.append("&2╠" + ("═" * (x - 2) + "╣"))
+            Buff.append("&2║ " + "&ePor favor, presione el numero que corresponda a su version&f:".ljust(x + 1) + "&2║")
             for i, version in self.Versions.items():
                 if i != '0':
-                    Buff.append("║ " + ("%s) %s" % (i, version)).ljust(x - 3) + "║")
-            for _ in range(len(Buff), y - 3):
-                Buff.append("║" + (" " * (x - 2) + "║"))
-            Buff.append("║ " + self.input.ljust(x - 3) + "║")
-            Buff.append("╚" + ("═" * (x - 2) + "╝"))
-            log.add("\n".join(Buff))()
-            time.sleep(1 / 5) # 5 FPS
+                    Buff.append("&2║ " + ("&b%s&f) &b%s" % (i, version)).ljust(x + 3) + "&2║")
+            for _ in range(len(Buff), y - 2):
+                Buff.append("&2║" + (" " * (x - 2) + "║"))
+            Buff.append("&2║ " + self.input.ljust(x - 3) + "║")
+            Buff.append("&2╚" + ("═" * (x - 2) + "╝"))
+
+            log.add("\n".join(Buff))
+            time.sleep(1 / 15) # 15 FPS
 
     def getVersion(self):
         key = ""
@@ -125,14 +136,14 @@ class CLI:
             self.input = "Abortando ..."
         else: self.input = "Lanzando ..."
 
+        time.sleep(0.1)
+
         return self.Versions.get(key, None)
 
     def stop(self):
         self.exit = True
 
-log = Logger()
-
-with log.add("Cargando variables por defecto."):
+with PB("Cargando variables por defecto."):
     class Data:
         Debug       = False
         JVM         = 'java'
@@ -217,13 +228,13 @@ def Launch(Data, args):
 
     CommandLine = " ".join([Data.JVM, Data.Flags.JVM, Data.MainClass, Data.Flags.MC])
     if Data.Debug:
-        print(CommandLine)
+        log.add(CommandLine)
     else:
         try: os.system(CommandLine)
         except KeyboardInterrupt: pass
 
 if __name__ == "__main__":
-    Thread(daemon = True, target=log.loop).start()
+    log.show().start(daemon = True)
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--version', default = None, help = 'Version de Minecraft')
@@ -246,22 +257,21 @@ if __name__ == "__main__":
 
     cli.stop()
 
-    if Data.Version is None:
-        exit()
+    if Data.Version is not None:
+        try:
+            dir = os.path.join(Data.MC, "versions", Data.Version)
+            os.makedirs(dir, exist_ok = True)
+            with PB("Cargando Minecraft %s." % Data.Version):
+                Data = runpy.run_path(os.path.join(dir, Data.Version + ".py"), init_globals = {"Data": Data, "log": log, "args": args}).get("Data", None)
+            assert Data, "Version incompatible o mal estructurada."
+            Launch(Data, args)
 
-    try:
-        dir = os.path.join(Data.MC, "versions", Data.Version)
-        os.makedirs(dir, exist_ok = True)
-        with log.add("Cargando Minecraft %s." % Data.Version):
-            Data = runpy.run_path(os.path.join(dir, Data.Version + ".py"), init_globals = {"Data": Data, "log": log, "args": args}).get("Data", None)
-        assert Data, "Version incompatible o mal estructurada."
-        Launch(Data, args)
+        except AssertionError as e:
+            log.add(e)
 
-    except AssertionError as e:
-        print(e)
+        except FileNotFoundError:
+            log.add("Archivo de configuracion no encontrada")
 
-    except FileNotFoundError:
-        print("Archivo de configuracion no encontrado.")
+        except: pass
 
-    time.sleep(0.1)
     exit()
