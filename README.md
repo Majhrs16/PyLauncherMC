@@ -18,12 +18,37 @@ PyLauncherMC está diseñado para ser utilizado con un acceso directo o un scrip
 
 ## Requisitos
 
-- Sistema operativo Windows o Linux.
-- No se requieren dependencias de Python adicionales.
+- Sistema operativo Windows. en el futuro: Linux y MacOS.
+- No se requieren dependencias adicionales.
+
+## AVISO DE SEGURIDAD
+
+¡Atención a todos los usuarios que descarguen `PyLauncherMC.exe`!
+
+Quiero asegurarles que mi código NO es malware, incluso les invito a comprobarlo por ustedes mismos.
+
+Los falsos positivos que detectan algunos antivirus en archivos compilados pueden ocurrir debido a características específicas de la compilación, que pueden interpretarse erróneamente como actividad maliciosa.
+
+Posiblemente la causa de dichas alertas sea por ser un programa.exe empaquetado, osea el cual contiene muchas otras secciones de codigo dentro(Libreria estandar de Python3 + dependencias usadas en el proyeto).
+
+Si aún tienen dudas, les animo a que realicen una prueba por sí mismos. Compilen un archivo.py vacío utilizando tanto py2exe como pyinstaller y comprueben que, incluso en ese caso, [VirusTotal](www.virustotal.com) también lo detecta como virus.
+
+Gracias por su comprensión y confianza en mi software. Estoy aquí para ayudar si tienen alguna pregunta adicional.
+
+## Compilación de PyLauncherMC
+Antes que nada, PyLauncherMC necesita de los siguientes requisitos/pasos:
+- `git clone https://github.com/Majhrs16/PyLauncherMC`
+- Al menos [Python 3.8](https://www.python.org/downloads/release/python-3810/) para funcionar correctamente.
+- Es importante destacar que los archivos `.py` dentro de la carpeta "versions" no deben ser ni siquiera precompilados(`.pyc` o `.pyo`).
+- Y por ultimo! Simplemente ejecuta el archivo `Compile.bat` y él se encargará del resto del proceso de compilación.
+
+Por el momento, mi soporte se limita a sistemas Windows. Sin embargo, en el futuro se planea agregar soporte para Linux.
+
+¡Disfruta de PyLauncherMC y aprovecha al máximo tus experiencias de juego!
 
 ## Licencia
 
-Este proyecto se distribuye bajo la licencia [GPL v3.0](https://www.gnu.org/licenses/gpl-3.0.en.html). <!-- Inserta aquí el enlace a la licencia GPL v3.0 -->
+Este proyecto se distribuye bajo la licencia [GPL v3.0](https://www.gnu.org/licenses/gpl-3.0.en.html).
 
 ---
 
