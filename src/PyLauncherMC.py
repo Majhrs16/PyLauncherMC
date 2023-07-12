@@ -12,7 +12,7 @@ import time
 import sys
 import os
 
-__version__ = "b1.1.2"
+__version__ = "b1.2.0"
 
 class _Logger:
     def __init__(self):
@@ -54,7 +54,7 @@ class LoggerFile(_Logger):
                 if self.log:
                     self.O.write(self.log.pop(0))
                     self.O.flush()
-                else: time.sleep(0.1)
+                else: time.sleep(0.01)
 
 out = LoggerOut()
 log = LoggerFile()
@@ -117,7 +117,7 @@ class CLI:
 
     def getVersions(self):
         Versions = {}
-        for i, path in enumerate(glob.glob(os.path.join(Data.MC, "versions", "*"))):
+        for i, path in enumerate(glob.glob(os.path.join(".", "versions", "*"))): # Tecnicamente es imposible poner la ruta principal en este tiempo.
             ver = os.path.basename(path)
             if os.path.exists(os.path.join(path, ver + ".py")):
                 Versions[str(i + 1)] = ver
@@ -136,21 +136,24 @@ class CLI:
             x, y = shutil.get_terminal_size()
             Buff = []
 
-#            os.system('cls' if sys.platform.startswith("win") else 'clear')
             Buff.append("&2╔" + ("═" * (x - 2) + "╗"))
-            Buff.append("&2║" + ("&bPyLauncherMC " + __version__).center(x) + "&2║")
+            Buff.append("&2║&7" + ("PyLauncherMC " + __version__).center(x - 2) + "&2║")
             Buff.append("&2╠" + ("═" * (x - 2) + "╣"))
-            Buff.append("&2║ " + "&ePor favor, presione el numero que corresponda a su version&f:".ljust(x + 1) + "&2║")
-            for i, version in self.Versions.items():
-                if i != '0':
-                    Buff.append("&2║ " + ("&b%s&f) &b%s" % (i, version)).ljust(x + 3) + "&2║")
+            if self.Versions:
+                Buff.append("&2║ &e" + "Por favor, presione el numero que corresponda a su version:".ljust(x - 3) + "&2║")
+                for i, version in self.Versions.items():
+                    if i != '0':
+                        Buff.append("&2║ &b" + ("%s) %s" % (i, version)).ljust(x - 3).replace(") ", "&f) &b") + "&2║")
+            else:
+                Buff.append("&2║ " + "Buscando versiones instaladas...".ljust(x - 2) + "&2║")
             for _ in range(len(Buff), y - 2):
-                Buff.append("&2║" + (" " * (x - 2) + "║"))
-            Buff.append("&2║ " + self.input.ljust(x - 3) + "║")
+                Buff.append("&2║" + (" " * (x - 2) + "&2║"))
+            Buff.append("&2║&3 " + self.input.ljust(x - 3).replace("> ", "&f> &b").replace("...", "&f...") + "&2║")
             Buff.append("&2╚" + ("═" * (x - 2) + "╝"))
 
             out.add("\n".join(Buff))
-            time.sleep(1 / 15) # 15 FPS
+
+            time.sleep(1 / 10) # 10 FPS
 
     def getVersion(self):
         key = ""
@@ -171,8 +174,10 @@ class CLI:
         time.sleep(0.1)
 
         if key == '0':
-              self.input = "Abortando ..."
+              self.input = "Cerrando ..."
         else: self.input = "Lanzando ..."
+
+        time.sleep(0.3)
 
         return self.Versions.get(key, None)
 
@@ -181,6 +186,32 @@ class CLI:
 
 with PB("Cargando variables por defecto."):
     class Data:
+        def __init__(self): pass
+
+        def format(self):
+            self.JVM         = self.JVM         .format(Data = self)
+            self.MinRam      = self.MinRam      .format(Data = self)
+            self.MaxRam      = self.MaxRam      .format(Data = self)
+            self.MC          = self.MC          .format(Data = self)
+            self.Lib         = self.Lib         .format(Data = self)
+            self.CLASSPATH   = ";".join([s.format(Data = self) for s in self.CLASSPATH])
+            self.Natives     = self.Natives     .format(Data = self)
+            self.MainClass   = self.MainClass   .format(Data = self)
+            if self.Nick:
+                self.Nick    = '--username ' + self.Nick.format(Data = self)
+            self.Token       = self.Token       .format(Data = self)
+            self.Version     = self.Version     .format(Data = self)
+            self.AssetsIndex = self.AssetsIndex .format(Data = self)
+            self.Flags.JVM   = [s.format(Data = self) for s in self.Flags.JVM]
+            self.Flags.MC    = [s.format(Data = self) for s in self.Flags.MC]
+
+            return self
+
+        def clone(self):
+            class D(Data): pass
+            D.__dict__.update(self.__dict__)
+            return D
+
         Debug       = False
         JVM         = 'java'
         MinRam      = '1G'
@@ -188,9 +219,9 @@ with PB("Cargando variables por defecto."):
         MC          = '.'
         Lib         = os.path.join('{Data.MC}', 'libraries')
         CLASSPATH = [
-            os.path.join("{Data.Lib}", 'log4j-core-2.17.0.jar'),
-            os.path.join("{Data.Lib}", 'log4j-api-2.17.0.jar'),
-            os.path.join("{Data.MC}", 'versions', "{Data.Version}", "{Data.Version}.jar"),
+            os.path.join('{Data.Lib}', 'log4j-core-2.17.0.jar'),
+            os.path.join('{Data.Lib}', 'log4j-api-2.17.0.jar'),
+            os.path.join('{Data.MC}', 'versions', '{Data.Version}', '{Data.Version}.jar'),
         ]
         Natives     = os.path.join('{Data.MC}', 'bin', 'natives')
         MainClass   = 'net.minecraft.client.main.Main'
@@ -248,43 +279,17 @@ with PB("Cargando variables por defecto."):
                 '--assetIndex {Data.AssetsIndex}',
             ]
 
-def Launch(Data, args):
-    Data.JVM         = Data.JVM         .format(Data = Data)
-    Data.MinRam      = Data.MinRam      .format(Data = Data)
-    Data.MaxRam      = Data.MaxRam      .format(Data = Data)
-    Data.MC          = Data.MC          .format(Data = Data)
-    Data.Lib         = Data.Lib         .format(Data = Data)
-    Data.CLASSPATH   = ";".join(Data.CLASSPATH if isinstance(Data.CLASSPATH, str) else [D.format(Data = Data) for D in Data.CLASSPATH])
-    Data.Natives     = Data.Natives     .format(Data = Data)
-    Data.MainClass   = Data.MainClass   .format(Data = Data)
-    if Data.Nick: Data.Nick = '--username ' + Data.Nick.format(Data = Data)
-    Data.Token       = Data.Token       .format(Data = Data)
-    Data.Version     = Data.Version     .format(Data = Data)
-    Data.AssetsIndex = Data.AssetsIndex .format(Data = Data)
-
-    Data.Flags.JVM   = [D.format(Data = Data) for D in Data.Flags.JVM]
-    Data.Flags.MC    = [D.format(Data = Data) for D in Data.Flags.MC]
-
-
-    CommandLine = " ".join([Data.JVM, *Data.Flags.JVM, Data.MainClass, *Data.Flags.MC])
+def Launch(D):
+    CommandLine = " ".join([D.JVM, *D.Flags.JVM, D.MainClass, *D.Flags.MC])
 
     s = "&aLinea de comando resultante a ejecutar&f: '&b%s&f'\n" % CommandLine
     log.add(s)
-    if Data.Debug:
+    if D.Debug:
         out.add(s)
 
     else: console and console().hide()
 
-    try:
-        if Data.Debug:
-            os.system(CommandLine)
-
-        else:
-            time.sleep(1)
-            p = Popen(CommandLine.split(), stdout = PIPE)
-            p.wait()
-#            log.add(p.stdout.read().decode("UTF-8").replace("\r\n", "\n"))
-
+    try: os.system(CommandLine)
     except KeyboardInterrupt: pass
     except Exception as e:
         s = traceback.format_exc()
@@ -327,9 +332,12 @@ if __name__ == "__main__":
                 dir = os.path.join(Data.MC, "versions", Data.Version)
                 os.makedirs(dir, exist_ok = True)
                 with PB("Cargando Minecraft %s." % Data.Version):
-                    Data = runpy.run_path(os.path.join(dir, Data.Version + ".py"), init_globals = {"Data": Data, "log": log, "args": args}).get("Data", None)
-                assert Data, "Version incompatible o mal estructurada."
-                Launch(Data, args)
+                    D = runpy.run_path(
+                        os.path.join(dir, Data.Version + ".py"),
+                        init_globals = {"Data": Data, "log": log, "args": args}
+                    ).get("Data", None)
+                    assert D, "Version incompatible o mal estructurada.\n"
+                Launch(D().format())
 
             except AssertionError as e:
                 log.add(e)
@@ -354,4 +362,4 @@ if __name__ == "__main__":
         i += 1
 
     console and console().restore()
-    sys.exit()
+    sys.exit(0)
