@@ -1,18 +1,15 @@
 
-try: from ctypes    import WinDLL
+try:
+	from ctypes     import WinDLL
+	k = WinDLL("kernel32")
+	k.SetConsoleMode(k.GetStdHandle(-11), 7)
 except: WinDLL = None
 from threading      import Thread #, _active_limbo_lock, _limbo, _start_new_thread, _HAVE_THREAD_NATIVE_ID, _active, _trace_hook, _profile_hook
 from socket         import socket, AF_INET, SOCK_DGRAM
 from urllib.request import build_opener
 from uuid           import getnode
-from re             import match
-from sys            import (
-	stderr as ERR,
-	stdout as OUT,
-	stdin  as IN
-)
-
-import colorama
+import re
+import sys
 
 
 class ProgressBar(object):
@@ -204,40 +201,38 @@ def dThread(func):
     return decorator
 
 class Color:
+    colors = {
+        '&0': '\033[30m',
+        '&1': '\033[34m',
+        '&2': '\033[32m',
+        '&3': '\033[36m',
+        '&4': '\033[31m',
+        '&5': '\033[35m',
+        '&6': '\033[33m',
+        '&7': '\033[37m',
+        '&8': '\033[90m',
+        '&9': '\033[94m',
+        '&a': '\033[92m',
+        '&b': '\033[96m',
+        '&c': '\033[91m',
+        '&d': '\033[95m',
+        '&e': '\033[93m',
+        '&f': '\033[97m',
+        '&r': '\033[0m'
+    }
+
     def __enter__(self):
-        colorama.init()
         return self
 
     def __exit__(self, *x):
-        colorama.deinit()
+        pass
+
+    def _clear(self):
+    	return '\033c'
 
     def clear(self):
-        print(colorama.ansi.clear_screen())
+    	sys.stdout.write(self._clear())
 
-    def translate(self, str):
-        colores_minecraft = {
-            "&0": colorama.Fore.BLACK,
-            "&1": colorama.Fore.BLUE,
-            "&2": colorama.Fore.GREEN,
-            "&3": colorama.Fore.CYAN,
-            "&4": colorama.Fore.RED,
-            "&5": colorama.Fore.MAGENTA,
-            "&6": colorama.Fore.YELLOW,
-            "&7": colorama.Fore.WHITE,
-            "&8": colorama.Fore.BLACK + colorama.Style.BRIGHT,
-            "&9": colorama.Fore.BLUE + colorama.Style.BRIGHT,
-            "&a": colorama.Fore.GREEN + colorama.Style.BRIGHT,
-            "&b": colorama.Fore.CYAN + colorama.Style.BRIGHT,
-            "&c": colorama.Fore.RED + colorama.Style.BRIGHT,
-            "&d": colorama.Fore.MAGENTA + colorama.Style.BRIGHT,
-            "&e": colorama.Fore.YELLOW + colorama.Style.BRIGHT,
-            "&f": colorama.Fore.WHITE + colorama.Style.BRIGHT,
-            "&r": colorama.Style.RESET_ALL,
-            "&m": colorama.Style.DIM,
-            "&l": colorama.Style.BRIGHT,
-        }
-
-        for codigo, color in colores_minecraft.items():
-            str = str.replace(codigo, color)
-
-        return str
+    def translate(self, text):
+	    pattern = re.compile('|'.join(re.escape(key) for key in self.colors.keys()))
+	    return pattern.sub(lambda match: self.colors[match.group()], text)
