@@ -12,8 +12,7 @@ import time
 import sys
 import os
 
-
-__version__ = "b1.1.1"
+__version__ = "b1.1.2"
 
 class _Logger:
     def __init__(self):
@@ -161,8 +160,7 @@ class CLI:
                 if key == '0' or self.Versions.get(key, None):
                     break
 
-            try:
-                key = keyboard.read_key()
+            try: key = keyboard.read_key()
 
             except KeyboardInterrupt:
                 key = '0'
@@ -170,11 +168,11 @@ class CLI:
 
             except: pass
 
-        if key == '0':
-            self.input = "Abortando ..."
-        else: self.input = "Lanzando ..."
-
         time.sleep(0.1)
+
+        if key == '0':
+              self.input = "Abortando ..."
+        else: self.input = "Lanzando ..."
 
         return self.Versions.get(key, None)
 
@@ -237,7 +235,7 @@ with PB("Cargando variables por defecto."):
                 '-XX:ParallelGCThreads=4',
                 '-Dorg.lwjgl.opengl.Display.setFullscreen=true',
                 '-Djava.library.path={Data.Natives}',
-                'reservado',
+                '-cp {Data.CLASSPATH}',
                 '-Dlog4j.configurationFile=%s' % os.path.join('{Data.Lib}', 'client-1.7.xml')
             ]
 
@@ -256,15 +254,13 @@ def Launch(Data, args):
     Data.MaxRam      = Data.MaxRam      .format(Data = Data)
     Data.MC          = Data.MC          .format(Data = Data)
     Data.Lib         = Data.Lib         .format(Data = Data)
-    Data.CLASSPATH   = [D.format(Data = Data) for D in Data.CLASSPATH]
+    Data.CLASSPATH   = ";".join(Data.CLASSPATH if isinstance(Data.CLASSPATH, str) else [D.format(Data = Data) for D in Data.CLASSPATH])
     Data.Natives     = Data.Natives     .format(Data = Data)
     Data.MainClass   = Data.MainClass   .format(Data = Data)
-    if Data.Nick: Data.Nick = '--username %s' % Data.Nick.format(Data = Data)
+    if Data.Nick: Data.Nick = '--username ' + Data.Nick.format(Data = Data)
     Data.Token       = Data.Token       .format(Data = Data)
     Data.Version     = Data.Version     .format(Data = Data)
     Data.AssetsIndex = Data.AssetsIndex .format(Data = Data)
-
-    Data.Flags.JVM[-2] = "-cp " + ";".join(Data.CLASSPATH) ############ POTENCIALMENTE PELIGROSO...
 
     Data.Flags.JVM   = [D.format(Data = Data) for D in Data.Flags.JVM]
     Data.Flags.MC    = [D.format(Data = Data) for D in Data.Flags.MC]
@@ -272,9 +268,9 @@ def Launch(Data, args):
 
     CommandLine = " ".join([Data.JVM, *Data.Flags.JVM, Data.MainClass, *Data.Flags.MC])
 
+    s = "&aLinea de comando resultante a ejecutar&f: '&b%s&f'\n" % CommandLine
+    log.add(s)
     if Data.Debug:
-        s = "&aLinea de comando resultante a ejecutar&f: '&b%s&f'\n" % CommandLine
-        log.add(s)
         out.add(s)
 
     else: console and console().hide()
@@ -286,7 +282,8 @@ def Launch(Data, args):
         else:
             time.sleep(1)
             p = Popen(CommandLine.split(), stdout = PIPE)
-            log.add(p.stdout.read().decode("UTF-8").replace("\r\n", "\n"))
+            p.wait()
+#            log.add(p.stdout.read().decode("UTF-8").replace("\r\n", "\n"))
 
     except KeyboardInterrupt: pass
     except Exception as e:
