@@ -12,7 +12,7 @@ import time
 import sys
 import os
 
-__version__ = "b1.2.0"
+__version__ = "b1.2.3"
 
 class _Logger:
     def __init__(self):
@@ -39,7 +39,8 @@ class LoggerOut(_Logger):
                 if self.log:
                     self.O.write(term.translate(self.log.pop(0)))
                     self.O.flush()
-                else: time.sleep(0.1)
+
+                time.sleep(1 / 30)
 
 class LoggerFile(_Logger):
     def __init__(self):
@@ -54,7 +55,8 @@ class LoggerFile(_Logger):
                 if self.log:
                     self.O.write(self.log.pop(0))
                     self.O.flush()
-                else: time.sleep(0.01)
+
+                time.sleep(1 / 30)
 
 out = LoggerOut()
 log = LoggerFile()
@@ -62,7 +64,12 @@ log = LoggerFile()
 class PB:
     def __init__(self, *s):
         self.exit = False
-        self.s = " ".join(s)
+        
+        self.prefix  = ""
+        self.text    = " ".join(s)
+        self.postfix = "\r"
+        self.x       = 1
+
 
     def __enter__(self):
         self.show().start()
@@ -71,35 +78,51 @@ class PB:
     def __exit__(self, *x):
         self.stop()
 
-        s = None
         if x == (None,) * 3:
-            s = "&f[  &2OK  &f] " + self.s + "\n"
+            self.prefix = "&f[  &2OK  &f]"
         else:
-            s = "&f[ &cFAIL &f] " + self.s + "\n"
-        out.add(s)
-        log.add(s)
+            self.prefix = "&f[ &cFAIL &f]"
+
+        self.postfix = "\n"
+        self.update()
+
+    def update(self):
+        out.add((self.prefix + " " + self.text).ljust(self.x) + self.postfix)
+
+    @dThread
+    def _preffix(self):
+        while not self.exit:
+            self.x, _ = shutil.get_terminal_size()
+
+            for prefix in [
+                "&f[&a*     &f]",
+                "&f[&a**    &f]",
+                "&f[&a***   &f]",
+                "&f[&a ***  &f]",
+                "&f[&a  *** &f]",
+                "&f[&a   ***&f]",
+                "&f[&a    **&f]",
+                "&f[&a     *&f]",
+                "&f[&a    **&f]",
+                "&f[&a   ***&f]",
+                "&f[&a  *** &f]",
+                "&f[&a ***  &f]",
+                "&f[&a***   &f]",
+                "&f[&a**    &f]"
+                ]:
+
+                self.prefix = prefix
+                time.sleep(0.250)
+
 
     @dThread
     def show(self):
+        self._preffix().start(daemon = True)
+
         while not self.exit:
-            for s in ["&f[&a*     &f]",
-                      "&f[&a**    &f]",
-                      "&f[&a***   &f]",
-                      "&f[&a ***  &f]",
-                      "&f[&a  *** &f]",
-                      "&f[&a   ***&f]",
-                      "&f[&a    **&f]",
-                      "&f[&a     *&f]",
-                      "&f[&a    **&f]",
-                      "&f[&a   ***&f]",
-                      "&f[&a  *** &f]",
-                      "&f[&a ***  &f]",
-                      "&f[&a***   &f]",
-                      "&f[&a**    &f]"
-                     ]:
-                if self.exit: break
-                out.add(s, " ", self.s, "\r")
-                time.sleep(0.250)
+            self.update()
+            time.sleep(1 / 30)
+
 
     def stop(self):
         self.exit = True
@@ -188,6 +211,8 @@ with PB("Cargando variables por defecto."):
     class Data:
         def __init__(self): pass
 
+        time.sleep(0.1)
+
         def format(self):
             self.JVM         = self.JVM         .format(Data = self)
             self.MinRam      = self.MinRam      .format(Data = self)
@@ -257,14 +282,14 @@ with PB("Cargando variables por defecto."):
                 '-XX:+IgnoreUnrecognizedVMOptions',
                 '-XX:MaxGCPauseMillis=50',
                 '-XX:HeapDumpPath=MojangTricksIntelDriversForPerformance_javaw.exe_minecraft.exe.heapdump',
-                '-Dsun.java2d.d3d=true',
-                '-Dsun.java2d.opengl=false',
-                '-Dorg.lwjgl.opengl.Display.allowSoftwareOpenGL=false',
+                '-Dsun.java2d.d3d=false',
+                '-Dsun.java2d.opengl=true',
+                '-Dorg.lwjgl.opengl.Display.allowSoftwareOpenGL=true',
 #               '-Xlog:gc*:logs/gc.log:time,uptime:filecount=5,filesize=1M',
                 '-XX:+AggressiveOpts',
                 '-XX:-UseCompressedOops',
                 '-XX:ParallelGCThreads=4',
-                '-Dorg.lwjgl.opengl.Display.setFullscreen=true',
+#               '-Dorg.lwjgl.opengl.Display.setFullscreen=true',
                 '-Djava.library.path={Data.Natives}',
                 '-cp {Data.CLASSPATH}',
                 '-Dlog4j.configurationFile=%s' % os.path.join('{Data.Lib}', 'client-1.7.xml')
@@ -331,10 +356,10 @@ if __name__ == "__main__":
             try:
                 dir = os.path.join(Data.MC, "versions", Data.Version)
                 os.makedirs(dir, exist_ok = True)
-                with PB("Cargando Minecraft %s." % Data.Version):
+                with PB("Cargando Minecraft %s." % Data.Version) as pb:
                     D = runpy.run_path(
                         os.path.join(dir, Data.Version + ".py"),
-                        init_globals = {"Data": Data, "log": log, "args": args}
+                        init_globals = {"Data": Data, "PB": pb}
                     ).get("Data", None)
                     assert D, "Version incompatible o mal estructurada.\n"
                 Launch(D().format())
@@ -344,16 +369,20 @@ if __name__ == "__main__":
                 out.add(e)
                 time.slep(3)
 
-            except FileNotFoundError:
-                s = "\tArchivo de configuracion no encontrado\n"
+            except FileNotFoundError as e:
+                s = "\tArchivo no encontrado.\n"
                 log.add(s)
                 out.add(s)
+                s = traceback.format_exc()
+                log.add(s)
                 time.sleep(3)
 
             except Exception as e:
-                s = traceback.format_exc()
+                s = "\tError desconocido.\n"
                 log.add(s)
                 out.add(s)
+                s = traceback.format_exc()
+                log.add(s)
                 time.sleep(3)
                 break
 
