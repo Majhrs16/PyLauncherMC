@@ -1,7 +1,7 @@
 from Maj.Sh import dThread, Color, console
-from subprocess import Popen, PIPE
 from threading import Thread
 
+import urllib.request ## Solamente por dar soporte a las versiones descargadoras.
 import traceback
 import keyboard
 import argparse
@@ -12,12 +12,12 @@ import time
 import sys
 import os
 
-__version__ = "b1.2.3"
+__version__ = "b1.2.4"
 
 class _Logger:
     def __init__(self):
         self.log = []
-        self.O   = None
+        self.out = None
 
     def add(self, *s):
         self.log.extend(s)
@@ -30,15 +30,15 @@ class LoggerOut(_Logger):
     def __init__(self):
         super().__init__()
 
-        self.O = sys.stdout
+        self.out = sys.stdout
 
     @dThread
     def show(self):
         with Color() as term:
             while True:
                 if self.log:
-                    self.O.write(term.translate(self.log.pop(0)))
-                    self.O.flush()
+                    self.out.write(term.translate(self.log.pop(0)))
+                    self.out.flush()
 
                 time.sleep(1 / 30)
 
@@ -46,15 +46,15 @@ class LoggerFile(_Logger):
     def __init__(self):
         super().__init__()
 
-        self.O = open("log.log", "w")
+        self.out = open("log.log", "w")
 
     @dThread
     def show(self):
-        with self.O:
+        with self.out:
             while True:
                 if self.log:
-                    self.O.write(self.log.pop(0))
-                    self.O.flush()
+                    self.out.write(self.log.pop(0))
+                    self.out.flush()
 
                 time.sleep(1 / 30)
 
