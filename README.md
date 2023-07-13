@@ -31,7 +31,7 @@ Los falsos positivos que detectan algunos antivirus en archivos compilados puede
 
 Posiblemente la causa de dichas alertas sea por ser un programa.exe empaquetado, osea el cual contiene muchas otras secciones de codigo dentro(Libreria estandar de Python3 + dependencias usadas en el proyeto).
 
-Si aún tienen dudas, les animo a que realicen una prueba por sí mismos. Compilen un archivo.py vacío utilizando tanto py2exe como pyinstaller y comprueben que, incluso en ese caso, [VirusTotal](www.virustotal.com) también lo detecta como virus.
+Si aún tienen dudas, les animo a que realicen una prueba por sí mismos. Compilen un archivo.py vacío utilizando tanto py2exe como pyinstaller y comprueben que, incluso en ese caso, [VirusTotal](https://www.virustotal.com) también lo detecta como virus.
 
 Gracias por su comprensión y confianza en mi software. Estoy aquí para ayudar si tienen alguna pregunta adicional.
 
