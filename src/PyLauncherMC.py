@@ -76,15 +76,7 @@ class PB:
         return self
 
     def __exit__(self, *x):
-        self.stop()
-
-        if x == (None,) * 3:
-            self.prefix = "&f[  &2OK  &f]"
-        else:
-            self.prefix = "&f[ &cFAIL &f]"
-
-        self.postfix = "\n"
-        self.update()
+        self.stop(x != (None, None, None))
 
     def update(self):
         out.add((self.prefix + " " + self.text).ljust(self.x) + self.postfix)
@@ -95,20 +87,20 @@ class PB:
             self.x, _ = shutil.get_terminal_size()
 
             for prefix in [
-                "&f[&a*     &f]",
-                "&f[&a**    &f]",
-                "&f[&a***   &f]",
-                "&f[&a ***  &f]",
-                "&f[&a  *** &f]",
-                "&f[&a   ***&f]",
-                "&f[&a    **&f]",
-                "&f[&a     *&f]",
-                "&f[&a    **&f]",
-                "&f[&a   ***&f]",
-                "&f[&a  *** &f]",
-                "&f[&a ***  &f]",
-                "&f[&a***   &f]",
-                "&f[&a**    &f]"
+                "&f[&2*     &f]",
+                "&f[&a*&2*    &f]",
+                "&f[&2*&a*&2*   &f]",
+                "&f[ &2*&a*&2*  &f]",
+                "&f[  &2*&a*&2* &f]",
+                "&f[   &2*&a*&2*&f]",
+                "&f[    &2*&a*&f]",
+                "&f[     &2*&f]",
+                "&f[    &a*&a*&f]",
+                "&f[   &2*&a*&2*&f]",
+                "&f[  &2*&a*&2* &f]",
+                "&f[ &2*&a*&2*  &f]",
+                "&f[&2*&a*&2*   &f]",
+                "&f[&2*&a*    &f]"
                 ]:
 
                 self.prefix = prefix
@@ -124,8 +116,14 @@ class PB:
             time.sleep(1 / 30)
 
 
-    def stop(self):
+    def stop(self, id = 0):
         self.exit = True
+
+        if id: self.prefix = "&f[ &cFAIL &f]"
+        else:  self.prefix = "&f[  &2OK  &f]"
+
+        self.postfix = "\n"
+        self.update()
 
 class CLI:
     def __init__(self):
@@ -210,8 +208,6 @@ class CLI:
 with PB("Cargando variables por defecto."):
     class Data:
         def __init__(self): pass
-
-        time.sleep(0.1)
 
         def format(self):
             self.JVM         = self.JVM         .format(Data = self)
