@@ -344,8 +344,6 @@ if __name__ == "__main__":
             if args.version is None:
                 max = 999
 
-                raise
-
                 console and console().restore()
                 cli.start()
                 Data.Version = cli.getVersion()

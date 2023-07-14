@@ -96,5 +96,5 @@ class Data(Data):
 	Natives     = join(VersionPath, 'natives')
 	AssetsIndex = '1.20'
 
-	CLASSPATH.append(join(VersionPath, Data.Version + ".py"))
+	CLASSPATH.append(join(VersionPath, Data.Version + ".jar"))
 del Data.Flags.JVM[-3] # Deshabilitar parametro natives.
