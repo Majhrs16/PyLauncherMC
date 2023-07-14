@@ -233,6 +233,11 @@ class Color:
     def clear(self):
     	sys.stdout.write(self._clear())
 
-    def translate(self, text):
-	    pattern = re.compile('|'.join(re.escape(key) for key in self.colors.keys()))
-	    return pattern.sub(lambda match: self.colors[match.group()], text)
+    def cleartext(self, text):
+    	return self.translate(text, {k: '' for k, v in self.colors.items()})
+
+    def translate(self, text, _colors = None):
+        if _colors is None: _colors = self.colors
+
+        pattern = re.compile('|'.join(re.escape(key) for key in _colors.keys()))
+        return pattern.sub(lambda match: _colors[match.group()], text)

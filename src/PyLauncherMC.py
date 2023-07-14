@@ -12,12 +12,13 @@ import time
 import sys
 import os
 
-__version__ = "b1.2.5"
+__version__ = "b1.2.6"
 
 class _Logger:
+    out = None
+
     def __init__(self):
         self.log = []
-        self.out = None
 
     def add(self, *s):
         self.log.extend(s)
@@ -27,10 +28,7 @@ class _Logger:
         pass
 
 class LoggerOut(_Logger):
-    def __init__(self):
-        super().__init__()
-
-        self.out = sys.stdout
+    out = sys.stdout
 
     @dThread
     def show(self):
@@ -43,17 +41,14 @@ class LoggerOut(_Logger):
                 time.sleep(1 / 30)
 
 class LoggerFile(_Logger):
-    def __init__(self):
-        super().__init__()
-
-        self.out = open("log.log", "w")
+    out = open("log.log", "w") # No estoy seguro si esto sea seguro...
 
     @dThread
     def show(self):
-        with self.out:
+        with  Color() as term, self.out:
             while True:
                 if self.log:
-                    self.out.write(self.log.pop(0))
+                    self.out.write(term.cleartext(self.log.pop(0)))
                     self.out.flush()
 
                 time.sleep(1 / 30)
@@ -70,6 +65,23 @@ class PB:
         self.postfix = "\r"
         self.x       = 1
 
+        self.prefixes = [
+            "&f[&2*     &f]",
+            "&f[&a*&2*    &f]",
+            "&f[&2*&a*&2*   &f]",
+            "&f[ &2*&a*&2*  &f]",
+            "&f[  &2*&a*&2* &f]",
+            "&f[   &2*&a*&2*&f]",
+            "&f[    &2*&a*&f]",
+            "&f[     &2*&f]",
+            "&f[    &a*&a*&f]",
+            "&f[   &2*&a*&2*&f]",
+            "&f[  &2*&a*&2* &f]",
+            "&f[ &2*&a*&2*  &f]",
+            "&f[&2*&a*&2*   &f]",
+            "&f[&2*&a*    &f]"
+        ]
+
 
     def __enter__(self):
         self.show().start()
@@ -78,38 +90,21 @@ class PB:
     def __exit__(self, *x):
         self.stop(x != (None, None, None))
 
-    def update(self):
-        out.add((self.prefix + " " + self.text).ljust(self.x) + self.postfix)
+    def update(self, outfile = None):
+        if outfile is None: outfile = out
+        outfile.add((self.prefix + " " + self.text).ljust(self.x) + self.postfix)
 
     @dThread
-    def _preffix(self):
+    def showPrefix(self):
         while not self.exit:
-            self.x, _ = shutil.get_terminal_size()
-
-            for prefix in [
-                "&f[&2*     &f]",
-                "&f[&a*&2*    &f]",
-                "&f[&2*&a*&2*   &f]",
-                "&f[ &2*&a*&2*  &f]",
-                "&f[  &2*&a*&2* &f]",
-                "&f[   &2*&a*&2*&f]",
-                "&f[    &2*&a*&f]",
-                "&f[     &2*&f]",
-                "&f[    &a*&a*&f]",
-                "&f[   &2*&a*&2*&f]",
-                "&f[  &2*&a*&2* &f]",
-                "&f[ &2*&a*&2*  &f]",
-                "&f[&2*&a*&2*   &f]",
-                "&f[&2*&a*    &f]"
-                ]:
-
+            for prefix in self.prefixes:
                 self.prefix = prefix
                 time.sleep(0.250)
 
 
     @dThread
     def show(self):
-        self._preffix().start(daemon = True)
+        self.showPrefix().start(daemon = True)
 
         while not self.exit:
             self.update()
@@ -124,6 +119,7 @@ class PB:
 
         self.postfix = "\n"
         self.update()
+        self.update(log)
 
 class CLI:
     def __init__(self):
@@ -156,6 +152,9 @@ class CLI:
             if self.exit: break
             x, y = shutil.get_terminal_size()
             Buff = []
+
+            if sys.platform == "linux":
+                Color().clear()
 
             Buff.append("&2╔" + ("═" * (x - 2) + "╗"))
             Buff.append("&2║&7" + ("PyLauncherMC " + __version__).center(x - 2) + "&2║")
@@ -210,12 +209,14 @@ with PB("Cargando variables por defecto."):
         def __init__(self): pass
 
         def format(self):
+            sep = {'win32': ';', 'linux': ':'}.get(sys.platform, ":")
+
             self.JVM         = self.JVM         .format(Data = self)
             self.MinRam      = self.MinRam      .format(Data = self)
             self.MaxRam      = self.MaxRam      .format(Data = self)
             self.MC          = self.MC          .format(Data = self)
             self.Lib         = self.Lib         .format(Data = self)
-            self.CLASSPATH   = ";".join([s.format(Data = self) for s in self.CLASSPATH])
+            self.CLASSPATH   = sep.join([s.format(Data = self) for s in self.CLASSPATH])
             self.Natives     = self.Natives     .format(Data = self)
             self.MainClass   = self.MainClass   .format(Data = self)
             if self.Nick:
@@ -335,56 +336,59 @@ if __name__ == "__main__":
     Data.Debug   = args.debug
     Data.Nick    = args.nick
 
-    i = 0
-    max = 1
-    while i < max:
-        cli = CLI()
-        if args.version is None:
-            max = 999
+    try:
+        i = 0
+        max = 1
+        while i < max:
+            cli = CLI()
+            if args.version is None:
+                max = 999
 
-            console and console().restore()
-            cli.start()
-            Data.Version = cli.getVersion()
+                raise
 
-        cli.stop()
+                console and console().restore()
+                cli.start()
+                Data.Version = cli.getVersion()
 
-        if Data.Version is not None:
-            try:
+            cli.stop()
+
+            if Data.Version is not None:
                 dir = os.path.join(Data.MC, "versions", Data.Version)
                 os.makedirs(dir, exist_ok = True)
-                with PB("Cargando Minecraft %s." % Data.Version) as pb:
-                    D = runpy.run_path(
-                        os.path.join(dir, Data.Version + ".py"),
-                        init_globals = {"Data": Data, "PB": pb}
-                    ).get("Data", None)
-                    assert D, "Version incompatible o mal estructurada.\n"
+                py = os.path.join(dir, Data.Version + ".py")
+
+                try:
+                    assert os.path.exists(py), "\tArchivo de config &f'&b%s&f' no encontrado.\n"
+                    with PB("Cargando Minecraft %s." % Data.Version) as pb:
+                        D = runpy.run_path(py,
+                            init_globals = {"Data": Data, "PB": pb}
+                        ).get("Data", None)
+                        assert D, "\t&4Version incompatible o mal estructurada&f.\n"
+
+                except AssertionError as e:
+                    log.add(e)
+                    out.add(e)
+                    time.slep(3)
+
+                except Exception as e:
+                    s = "\t&4Error al cargar la version&f. &ePara mas detalles&b, &emire el &blog&f.&blog&f.\n"
+                    log.add(s)
+                    out.add(s)
+                    log.add(traceback.format_exc())
+                    time.sleep(3)
+
                 Launch(D().format())
 
-            except AssertionError as e:
-                log.add(e)
-                out.add(e)
-                time.slep(3)
+            else: break
 
-            except FileNotFoundError as e:
-                s = "\tArchivo no encontrado.\n"
-                log.add(s)
-                out.add(s)
-                s = traceback.format_exc()
-                log.add(s)
-                time.sleep(3)
+            i += 1
 
-            except Exception as e:
-                s = "\tError desconocido.\n"
-                log.add(s)
-                out.add(s)
-                s = traceback.format_exc()
-                log.add(s)
-                time.sleep(3)
-                break
-
-        else: break
-
-        i += 1
+    except Exception as e:
+        s = "\n\n&4Error desconocido&f. &ePor favor notificarlo en &bhttps://github.com/Majhrs16/PyLauncherMC/tree/main\n&f"
+        log.add(s)
+        out.add(s)
+        log.add(traceback.format_exc())
+        time.sleep(3)
 
     console and console().restore()
     sys.exit(0)
