@@ -1,2 +1,2 @@
-pip install keyboard pyinstaller pillow
-pyinstaller -i src/.ico --onefile src/PyLauncherMC.py
+pip3 install keyboard pyinstaller
+pyinstaller -i src/icon.ico --onefile src/PyLauncherMC.py

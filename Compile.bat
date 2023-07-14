@@ -1,4 +1,4 @@
 @Echo OFF
-pip install keyboard pyinstaller pillow
-pyinstaller -i src\.ico --onefile src\PyLauncherMC.py
+python -m pip install keyboard pyinstaller
+pyinstaller -i src\icon.ico --onefile src\PyLauncherMC.py
 pause
