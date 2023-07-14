@@ -1,1 +1,2 @@
-pyinstaller -i .ico --onefile PyLauncherMC.py
+pip install keyboard pyinstaller pillow
+pyinstaller -i .ico --target-arch x86 --onefile PyLauncherMC.py
