@@ -12,7 +12,7 @@ import time
 import sys
 import os
 
-__version__ = "b1.2.4"
+__version__ = "b1.2.5"
 
 class _Logger:
     def __init__(self):
@@ -168,11 +168,11 @@ class CLI:
                     if i != '0':
                         Buff.append("&2║ &b" + ("%s) %s" % (i, version)).ljust(x - 3).replace(") ", "&f) &b") + "&2║")
             else:
-                Buff.append("&2║ " + "Buscando versiones instaladas...".ljust(x - 2) + "&2║")
+                Buff.append("&2║ &e" + "Buscando versiones instaladas...".ljust(x - 3).replace("...", "&f...") + "&2║")
             for _ in range(len(Buff), y - 2):
                 Buff.append("&2║" + (" " * (x - 2) + "&2║"))
             Buff.append("&2║&3 " + self.input.ljust(x - 3).replace("> ", "&f> &b").replace("...", "&f...") + "&2║")
-            Buff.append("&2╚" + ("═" * (x - 2) + "╝"))
+            Buff.append("&2╚" + ("═" * (x - 2) + "╝&f"))
 
             out.add("\n".join(Buff))
 
