@@ -2,6 +2,8 @@
 
 PyLauncherMC es una herramienta escrita en Python 3.11 para lanzar Minecraft Java de forma rápida y eficiente en Windows y Linux. El proyecto se distribuye como un ejecutable único compilado con PyInstaller, lo que significa que no son necesarias dependencias adicionales de Python.
 
+## ADVERTENCIA: Alta posibilidad de FUERA DE SOPORTE, hasta proximo aviso...
+
 ## Argumentos
 
 - `--version VERSION`: Especifica la versión de Minecraft que se lanzará.
